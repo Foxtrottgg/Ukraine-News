@@ -15,7 +15,6 @@
                         darkBg: '#0a0b0d',
                         cardBg: '#12141a',
                         borderCol: '#232733',
-                        accentRed: '#ef4444'
                     }
                 }
             }
@@ -27,23 +26,59 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: flex;
+            width: 200%;
+            animation: marquee 25s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
     </style>
 </head>
-<body class="bg-[#0a0b0d] text-gray-100 min-h-screen flex flex-col justify-between selection:bg-red-500 selection:text-white" 
-      x-data="newsApp()">
+<body :class="accentColor" class="bg-[#0a0b0d] text-gray-100 min-h-screen flex flex-col justify-between selection:text-white" 
+      x-data="newsApp()" x-init="init()">
+
+    <!-- TOP BREAKING NEWS TICKER -->
+    <div class="bg-red-950/60 border-b border-red-900/50 text-red-200 text-xs py-2 overflow-hidden whitespace-nowrap relative">
+        <div class="animate-marquee flex space-x-12 px-4 mono">
+            <span>⚡ EILMELDUNG: Starlink-Drosselung nach US-Gesprächen aufgehoben</span>
+            <span>&bull;</span>
+            <span>🚨 Erhöhte Aktivität an strategischen Frontabschnitten im Osten</span>
+            <span>&bull;</span>
+            <span>⚡ Vorbereitungen für die Dezentralisierung der Energieinfrastruktur laufen auf Hochtouren</span>
+            <span>&bull;</span>
+            <span>⚡ EILMELDUNG: Starlink-Drosselung nach US-Gesprächen aufgehoben</span>
+            <span>&bull;</span>
+            <span>🚨 Erhöhte Aktivität an strategischen Frontabschnitten im Osten</span>
+        </div>
+    </div>
 
     <!-- Top Header -->
-    <header class="border-b border-[#232733] bg-[#12141a]/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+    <header class="border-b border-[#232733] bg-[#12141a]/90 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <div class="w-3 h-3 rounded-full animate-pulse" :class="accentDot"></div>
                 <h1 class="font-bold tracking-wider text-lg uppercase mono text-white">UKRAINE // INTELLIGENCE FEED</h1>
             </div>
+            
             <div class="flex items-center space-x-3">
-                <span class="text-xs text-gray-400 hidden sm:inline mono">STATUS: SECURE</span>
+                <!-- Theme / Accent Switcher -->
+                <div class="flex items-center space-x-1 bg-[#1f242d] p-1 rounded-lg border border-[#232733]">
+                    <button @click="theme = 'red'" title="Neon Rot" class="w-4 h-4 rounded-full bg-red-500 transition" :class="theme === 'red' ? 'ring-2 ring-white' : 'opacity-60'"></button>
+                    <button @click="theme = 'blue'" title="Cyber Blau" class="w-4 h-4 rounded-full bg-blue-500 transition" :class="theme === 'blue' ? 'ring-2 ring-white' : 'opacity-60'"></button>
+                    <button @click="theme = 'green'" title="Matrix Grün" class="w-4 h-4 rounded-full bg-emerald-500 transition" :class="theme === 'green' ? 'ring-2 ring-white' : 'opacity-60'"></button>
+                </div>
+
+                <span class="text-xs text-gray-400 hidden md:inline mono">STATUS: SECURE</span>
+                
                 <button @click="triggerRefresh()" class="bg-[#1f242d] hover:bg-[#282f3d] text-gray-300 text-xs px-3 py-1.5 rounded-lg border border-[#232733] transition flex items-center space-x-1.5">
-                    <svg :class="{'animate-spin': refreshing}" class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <span x-text="refreshing ? 'Synchronisiere...' : 'Aktualisieren'"></span>
+                    <svg :class="{'animate-spin': refreshing}" class="w-3.5 h-3.5" :class="accentText" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span x-text="refreshing ? 'Sync...' : 'Aktualisieren'"></span>
                 </button>
             </div>
         </div>
@@ -52,17 +87,37 @@
     <!-- Main Content Area -->
     <main class="max-w-4xl mx-auto px-4 py-8 w-full flex-grow">
         
+        <!-- Live-Statistik Leiste -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="bg-[#12141a] border border-[#232733] p-3 rounded-xl">
+                <p class="text-[10px] text-gray-400 uppercase mono">Sektoren aktiv</p>
+                <p class="text-sm font-bold text-gray-200 mono">4 Hauptzonen</p>
+            </div>
+            <div class="bg-[#12141a] border border-[#232733] p-3 rounded-xl">
+                <p class="text-[10px] text-gray-400 uppercase mono">Quellen</p>
+                <p class="text-sm font-bold text-gray-200 mono">OSINT & Wire</p>
+            </div>
+            <div class="bg-[#12141a] border border-[#232733] p-3 rounded-xl">
+                <p class="text-[10px] text-gray-400 uppercase mono">Sicherheit</p>
+                <p class="text-sm font-bold text-emerald-400 mono">256-Bit SSL</p>
+            </div>
+            <div class="bg-[#12141a] border border-[#232733] p-3 rounded-xl">
+                <p class="text-[10px] text-gray-400 uppercase mono">Letztes Update</p>
+                <p class="text-sm font-bold text-gray-200 mono" x-text="currentTime || 'Gerade eben'"></p>
+            </div>
+        </div>
+
         <!-- Controls & Search -->
         <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-8">
             <div class="flex flex-wrap gap-1.5 bg-[#12141a] p-1 rounded-xl border border-[#232733]">
-                <button @click="tab = 'all'" :class="tab === 'all' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Alle Meldungen</button>
-                <button @click="tab = 'tech'" :class="tab === 'tech' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Tech & Drohnen</button>
-                <button @click="tab = 'diplomacy'" :class="tab === 'diplomacy' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Diplomatie</button>
-                <button @click="tab = 'energy'" :class="tab === 'energy' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Energie & Logistik</button>
+                <button @click="tab = 'all'" :class="tab === 'all' ? accentBg + ' text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Alle Meldungen</button>
+                <button @click="tab = 'tech'" :class="tab === 'tech' ? accentBg + ' text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Tech & Drohnen</button>
+                <button @click="tab = 'diplomacy'" :class="tab === 'diplomacy' ? accentBg + ' text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Diplomatie</button>
+                <button @click="tab = 'energy'" :class="tab === 'energy' ? accentBg + ' text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Energie & Logistik</button>
             </div>
 
             <div class="relative w-full md:w-64">
-                <input type="text" x-model="search" placeholder="Feed durchsuchen..." class="w-full bg-[#12141a] text-sm text-gray-200 placeholder-gray-500 px-3.5 py-2 pl-9 rounded-xl border border-[#232733] focus:outline-none focus:border-red-500 transition">
+                <input type="text" x-model="search" placeholder="Feed durchsuchen..." class="w-full bg-[#12141a] text-sm text-gray-200 placeholder-gray-500 px-3.5 py-2 pl-9 rounded-xl border border-[#232733] focus:outline-none transition" :class="accentFocus">
                 <svg class="w-4 h-4 text-gray-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
         </div>
@@ -71,17 +126,17 @@
         <div class="space-y-4">
             <template x-for="item in filteredNews()" :key="item.id">
                 <article class="bg-[#12141a] border border-[#232733] rounded-2xl p-6 hover:border-gray-700 transition shadow-lg relative overflow-hidden group">
-                    <div x-show="item.urgent" class="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+                    <div x-show="item.urgent" class="absolute left-0 top-0 bottom-0 w-1" :class="accentBar"></div>
 
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <div class="flex items-center space-x-2">
                             <span class="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#1f242d] text-gray-300 border border-[#282f3d]" x-text="item.categoryLabel"></span>
-                            <span x-show="item.urgent" class="text-[10px] font-bold text-red-400 bg-red-950/40 border border-red-900/50 px-2 py-0.5 rounded-md">WICHTIG</span>
+                            <span x-show="item.urgent" class="text-[10px] font-bold px-2 py-0.5 rounded-md" :class="accentBadge" x-text="item.urgentText || 'WICHTIG'"></span>
                         </div>
                         <span class="text-xs text-gray-500 mono" x-text="item.time"></span>
                     </div>
 
-                    <h2 class="text-lg font-bold text-gray-100 mb-2 group-hover:text-red-400 transition" x-text="item.title"></h2>
+                    <h2 class="text-lg font-bold text-gray-100 mb-2 transition" :class="accentHover" x-text="item.title"></h2>
                     <p class="text-sm text-gray-300 mb-3 leading-relaxed" x-text="item.summary"></p>
                     <p class="text-xs text-gray-400 bg-[#0a0b0d]/60 p-3.5 rounded-xl border border-[#232733] leading-relaxed" x-text="item.details"></p>
                 </article>
@@ -94,22 +149,77 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-[#232733] py-6 text-center text-xs text-gray-500 bg-[#12141a] mt-12">
-        <p>&copy; 2026 &bull; Ukraine-Krieg Live Intelligence Portal</p>
+    <!-- Footer mit OSINT-Links -->
+    <footer class="border-t border-[#232733] py-8 text-center text-xs text-gray-500 bg-[#12141a] mt-12">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="mb-6 flex flex-wrap justify-center gap-6">
+                <span class="text-gray-400 font-semibold uppercase tracking-wider text-[10px] mono">Verifizierte Ressourcen:</span>
+                <a href="https://liveuamap.com" target="_blank" class="hover:text-white transition flex items-center space-x-1"><span>Liveuamap</span></a>
+                <a href="https://deepstatemap.live" target="_blank" class="hover:text-white transition flex items-center space-x-1"><span>DeepStateMap</span></a>
+                <a href="https://www.understandingwar.org" target="_blank" class="hover:text-white transition flex items-center space-x-1"><span>ISW Reports</span></a>
+            </div>
+            <p>&copy; 2026 &bull; Ukraine-Krieg Live Intelligence Portal &bull; Designed for Tactical Overview</p>
+        </div>
     </footer>
 
-    <!-- App Logic -->
+    <!-- App Logic & Theme Manager -->
     <script>
         function newsApp() {
             return {
                 tab: 'all',
                 search: '',
                 refreshing: false,
+                theme: 'red',
+                currentTime: '',
+                
+                init() {
+                    this.currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    setInterval(() => {
+                        this.currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    }, 10000);
+                },
+
                 triggerRefresh() {
                     this.refreshing = true;
                     setTimeout(() => { this.refreshing = false; }, 800);
                 },
+
+                get accentBg() {
+                    if(this.theme === 'blue') return 'bg-blue-600';
+                    if(this.theme === 'green') return 'bg-emerald-600';
+                    return 'bg-red-600';
+                },
+                get accentDot() {
+                    if(this.theme === 'blue') return 'bg-blue-500';
+                    if(this.theme === 'green') return 'bg-emerald-500';
+                    return 'bg-red-500';
+                },
+                get accentText() {
+                    if(this.theme === 'blue') return 'text-blue-500';
+                    if(this.theme === 'green') return 'text-emerald-500';
+                    return 'text-red-500';
+                },
+                get accentHover() {
+                    if(this.theme === 'blue') return 'group-hover:text-blue-400';
+                    if(this.theme === 'green') return 'group-hover:text-emerald-400';
+                    return 'group-hover:text-red-400';
+                },
+                get accentFocus() {
+                    if(this.theme === 'blue') return 'focus:border-blue-500';
+                    if(this.theme === 'green') return 'focus:border-emerald-500';
+                    return 'focus:border-red-500';
+                },
+                get accentBar() {
+                    if(this.theme === 'blue') return 'bg-blue-500';
+                    if(this.theme === 'green') return 'bg-emerald-500';
+                    return 'bg-red-500';
+                },
+                get accentBadge() {
+                    if(this.theme === 'blue') return 'text-blue-400 bg-blue-950/40 border border-blue-900/50';
+                    if(this.theme === 'green') return 'text-emerald-400 bg-emerald-950/40 border border-emerald-900/50';
+                    return 'text-red-400 bg-red-950/40 border border-red-900/50';
+                },
+
                 news: [
                     {
                         id: 1,
