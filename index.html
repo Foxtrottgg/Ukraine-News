@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ukraine-Krieg // Live-News & Analysen</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0a0b0d',
+                        cardBg: '#12141a',
+                        borderCol: '#232733',
+                        accentRed: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & Alpine.js für Interaktivität -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-[#0a0b0d] text-gray-100 min-h-screen flex flex-col justify-between selection:bg-red-500 selection:text-white" 
+      x-data="newsApp()">
+
+    <!-- Top Header -->
+    <header class="border-b border-[#232733] bg-[#12141a]/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <h1 class="font-bold tracking-wider text-lg uppercase mono text-white">UKRAINE // LIVE-FEED</h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-xs text-gray-400 hidden sm:inline mono">SYSTEM: ONLINE</span>
+                <button @click="triggerRefresh()" class="bg-[#1f242d] hover:bg-[#282f3d] text-gray-300 text-xs px-3 py-1.5 rounded-lg border border-[#232733] transition flex items-center space-x-1.5">
+                    <svg :class="{'animate-spin': refreshing}" class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span x-text="refreshing ? 'Lade...' : 'Aktualisieren'"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-5xl mx-auto px-4 py-6 w-full flex-grow">
+        
+        <!-- Controls & Search Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+            <!-- Filter Tabs -->
+            <div class="flex flex-wrap gap-1.5 bg-[#12141a] p-1 rounded-xl border border-[#232733]">
+                <button @click="tab = 'all'" :class="tab === 'all' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Alle</button>
+                <button @click="tab = 'tech'" :class="tab === 'tech' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Tech & Drohnen</button>
+                <button @click="tab = 'diplomacy'" :class="tab === 'diplomacy' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Diplomatie</button>
+                <button @click="tab = 'energy'" :class="tab === 'energy' ? 'bg-red-600 text-white font-medium shadow' : 'text-gray-400 hover:text-white'" class="px-3.5 py-1.5 rounded-lg text-xs transition">Energie & Winter</button>
+            </div>
+
+            <!-- Search Input -->
+            <div class="relative w-full md:w-64">
+                <input type="text" x-model="search" placeholder="Feed durchsuchen..." class="w-full bg-[#12141a] text-sm text-gray-200 placeholder-gray-500 px-3.5 py-2 pl-9 rounded-xl border border-[#232733] focus:outline-none focus:border-red-500 transition">
+                <svg class="w-4 h-4 text-gray-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+        </div>
+
+        <!-- News Feed List -->
+        <div class="space-y-4">
+            <template x-for="item in filteredNews()" :key="item.id">
+                <article class="bg-[#12141a] border border-[#232733] rounded-2xl p-5 hover:border-gray-700 transition shadow-lg relative overflow-hidden group">
+                    <!-- Urgent Indicator Strip -->
+                    <div x-show="item.urgent" class="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#1f242d] text-gray-300 border border-[#282f3d]" x-text="item.categoryLabel"></span>
+                            <span x-show="item.urgent" class="text-[10px] font-bold text-red-400 bg-red-950/40 border border-red-900/50 px-2 py-0.5 rounded-md">WICHTIG</span>
+                        </div>
+                        <span class="text-xs text-gray-500 mono" x-text="item.time"></span>
+                    </div>
+
+                    <h2 class="text-base font-bold text-gray-100 mb-2 group-hover:text-red-400 transition" x-text="item.title"></h2>
+                    <p class="text-sm text-gray-300 mb-3 leading-relaxed" x-text="item.summary"></p>
+                    <p class="text-xs text-gray-400 bg-[#0a0b0d]/60 p-3 rounded-xl border border-[#232733] leading-relaxed" x-text="item.details"></p>
+                </article>
+            </template>
+
+            <!-- Fallback wenn nichts gefunden wird -->
+            <div x-show="filteredNews().length === 0" class="text-center py-16 bg-[#12141a] border border-[#232733] rounded-2xl">
+                <p class="text-gray-400 text-sm">Keine passenden Meldungen gefunden.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#232733] py-6 text-center text-xs text-gray-500 bg-[#12141a] mt-12">
+        <p>&copy; 2026 &bull; Live Intelligence & News Feed</p>
+    </footer>
+
+    <!-- Sauber ausgelagerte Logik, um Code-Fehler im HTML zu verhindern -->
+    <script>
+        function newsApp() {
+            return {
+                tab: 'all',
+                search: '',
+                refreshing: false,
+                triggerRefresh() {
+                    this.refreshing = true;
+                    setTimeout(() => { this.refreshing = false; }, 1000);
+                },
+                news: [
+                    {
+                        id: 1,
+                        category: 'tech',
+                        categoryLabel: 'Militär & Technologie',
+                        time: 'Vor 15 Min.',
+                        title: 'Starlink-Drosselung nach US-Gesprächen offenbar aufgehoben',
+                        summary: 'Nach Medienberichten und einem Telefongespräch zwischen US-Präsident Donald Trump und Tech-Milliardär Elon Musk wurden die Geschwindigkeits- und Nutzungsbeschränkungen für das Starlink-Satellitensystem in der Ukraine wieder aufgehoben.',
+                        details: 'Die Ukraine ist für ihre militärische Kommunikation und Drohnensteuerung massiv auf Starlink angewiesen. Zuvor hatte Kiew beklagt, dass eine Drosselung des Dienstes die Verteidigung des Landes erheblich behindert habe.',
+                        urgent: true
+                    },
+                    {
+                        id: 2,
+                        category: 'diplomacy',
+                        categoryLabel: 'Diplomatie & Politik',
+                        time: 'Vor 45 Min.',
+                        title: 'Selenskyj beklagt neue russische Angriffswelle nach US-Kreml-Kontakt',
+                        summary: 'Der ukrainische Präsident Wolodymyr Selenskyj hat eine massive neue Welle russischer Raketen- und Drohnenangriffe auf Kiew und weitere Regionen scharf verurteilt.',
+                        details: 'Die Angriffe erfolgten unmittelbar nach einem Treffen zwischen Kremlchef Wladimir Putin und dem US-Sondergesandten Steve Witkoff. Selenskyj fordert von den westlichen Partnern "echten Druck" auf Moskau.',
+                        urgent: true
+                    },
+                    {
+                        id: 3,
+                        category: 'tech',
+                        categoryLabel: 'Militär & Technologie',
+                        time: 'Vor 2 Std.',
+                        title: 'Rekord bei Drohnen-Kodifizierung und UGV-Einsatz',
+                        summary: 'Hunderte neue unbemannte Systeme (UAS) wurden allein in diesem Jahr für den militärischen Einsatz freigegeben. Der Fokus verlagert sich zunehmend auf Boden-Drohnen (UGVs) für Logistik und Minenräumung.',
+                        details: 'Mehr als 22.000 unbemannte Bodenfahrzeuge wurden vertraglich geordert, um Verwundetentransporte unter Beschuss sicherer zu machen. Autonome Zielerfassung via KI soll gegnerisches Jamming umgehen.',
+                        urgent: false
+                    },
+                    {
+                        id: 4,
+                        category: 'energy',
+                        categoryLabel: 'Energie & Winter',
+                        time: 'Vor 3 Std.',
+                        title: 'Dezentralisierung der Energieinfrastruktur vor neuen Kälteeinbrüchen',
+                        summary: 'Angesichts drohender Angriffe auf die Strom- und Wärmeversorgung setzt die Ukraine verstärkt auf mobile Kraftwerke, kleinere Gasturbinen und verbesserten Luftabwehrschutz.',
+                        details: 'Nach den massiven Ausfällen in den Vorwintern versuchen Behörden und internationale Helfer, kritische Knotenpunkte besser abzusichern, um eine neue humanitäre Krise zu verhindern.',
+                        urgent: false
+                    },
+                    {
+                        id: 5,
+                        category: 'diplomacy',
+                        categoryLabel: 'Diplomatie & Politik',
+                        time: 'Vor 5 Std.',
+                        title: 'Debatte über Sicherheitsgarantien und Verhandlungszeitfenster',
+                        summary: 'Internationale Beobachter sehen die kommenden Monate als mögliches Zeitfenster für diplomatische Initiativen. Kiew und Europa fordern verbindliche Sicherheitsgarantien.',
+                        details: 'Während Moskau an territorialen Maximalforderungen festhält, betonen europäische Staaten, dass jegliche Friedensgespräche nur unter direkter Beteiligung der Ukraine und Europas stattfinden dürfen.',
+                        urgent: false
+                    }
+                ],
+                filteredNews() {
+                    return this.news.filter(item => {
+                        let matchesTab = this.tab === 'all' || item.category === this.tab;
+                        let matchesSearch = this.search === '' || 
+                            item.title.toLowerCase().includes(this.search.toLowerCase()) || 
+                            item.summary.toLowerCase().includes(this.search.toLowerCase());
+                        return matchesTab && matchesSearch;
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
